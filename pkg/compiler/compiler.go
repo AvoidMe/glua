@@ -28,9 +28,12 @@ func New() *Compiler {
 	}
 }
 
-func (self *Compiler) Compile(body []ast.Node) (*Code, error) {
+func (self *Compiler) Compile(body []ast.Node, depth int) (*Code, error) {
 	var result []Bytecode
 	for _, v := range body {
+		// After each statement we can reset register to base value
+		base_register := self.LocalRegister
+
 		switch node := v.(type) {
 		case ast.FunctionCall:
 			// Load function from upvalues
@@ -43,7 +46,7 @@ func (self *Compiler) Compile(body []ast.Node) (*Code, error) {
 			})
 
 			// Compile arguments
-			args, err := self.Compile(node.Args)
+			args, err := self.Compile(node.Args, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -58,12 +61,12 @@ func (self *Compiler) Compile(body []ast.Node) (*Code, error) {
 				Args: [3]int{register_ref, 2, 1}, // TODO: calc call args somehow
 			})
 		case ast.BinaryExpr:
-			left, err := self.Compile([]ast.Node{node.Left})
+			left, err := self.Compile([]ast.Node{node.Left}, depth+1)
 			if err != nil {
 				return nil, err
 			}
 			result = append(result, left.Code...)
-			right, err := self.Compile([]ast.Node{node.Right})
+			right, err := self.Compile([]ast.Node{node.Right}, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -107,7 +110,7 @@ func (self *Compiler) Compile(body []ast.Node) (*Code, error) {
 				Args:   [3]int{register_value, const_mapping},
 			})
 		case ast.UnaryMinus:
-			body, err := self.Compile([]ast.Node{node.Body})
+			body, err := self.Compile([]ast.Node{node.Body}, depth+1)
 			if err != nil {
 				return nil, err
 			}
@@ -119,6 +122,11 @@ func (self *Compiler) Compile(body []ast.Node) (*Code, error) {
 			})
 		default:
 			return nil, fmt.Errorf("Unexpected node type: %T", node)
+		}
+
+		// Return register to original value
+		if depth == 0 {
+			self.LocalRegister = base_register
 		}
 	}
 	return &Code{

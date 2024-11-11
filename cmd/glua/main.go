@@ -38,7 +38,7 @@ func main() {
 		panic(err)
 	}
 	compiler := compiler.New()
-	bytecode, err := compiler.Compile(ast)
+	bytecode, err := compiler.Compile(ast, 0)
 	if err != nil {
 		panic(err)
 	}
