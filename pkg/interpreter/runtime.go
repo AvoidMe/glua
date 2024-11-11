@@ -2,8 +2,9 @@ package interpreter
 
 import "fmt"
 
-type Function func(args []any)
+type LuaTable map[any]any
+type LuaFunction func(args []any)
 
-func PrintFunction(args []any) {
+func LuaPrintFunction(args []any) {
 	fmt.Println(args...)
 }
